@@ -138,7 +138,12 @@ bool ClientSocket::getSet() {
 }
 
 ClientSocket::~ClientSocket() {
-    if (this->setUp)
+    if (this->setUp) {
         //Properly terminate the sockets
-        close(this->connectionSocket);
+        try {
+            close(this->connectionSocket);
+        } catch (...) {
+            printf("Error closing socket (client side)");
+        }
+    }
 }

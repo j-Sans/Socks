@@ -7,7 +7,7 @@ ServerSocket::ServerSocket() {}
 std::string ServerSocket::getHostName() {
     char name[1024];
     if (gethostname(name, 1024) < 0) {
-        throw std::runtime_error(std::string("ERROR getting host name: ") + strerror(errno));
+        throw strcat((char *)"ERROR getting host name: ", strerror(errno));
     }
     return std::string(name);
 }
@@ -39,7 +39,7 @@ void ServerSocket::setSocket(int portNum) {
     returnVal = getaddrinfo(NULL, std::to_string(portNum).c_str(), &hints, &serverAddressList);
     
     if (returnVal != 0) {
-        throw std::runtime_error(std::string("ERROR getting local address: ") + std::string(gai_strerror(returnVal))); //gai_strerror() returns a c string representation of the error
+        throw strcat((char *)"ERROR getting local address: ", gai_strerror(returnVal)); //gai_strerror() returns a c string representation of the error
     }
     
     //Set the first host in the list to the desired host
@@ -65,12 +65,12 @@ void ServerSocket::setSocket(int portNum) {
     
     //Checks for errors initializing socket
     if (socket < 0)
-        throw std::runtime_error(std::string("ERROR opening socket") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR opening socket", strerror(errno));
     
     int enable = 1;
     //This code tells the kernel that the port can be reused as long as there isn't an active socket listening there. This means that after the socket is closed the port can immediately be reused without giving an error
     if (setsockopt(this->hostSocket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) == -1) {
-        throw std::runtime_error(std::string("ERROR setting port to reusable") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR setting port to reusable", strerror(errno));
     }
     
     /* bind()
@@ -86,7 +86,7 @@ void ServerSocket::setSocket(int portNum) {
      This function can fail for multiple reasons. The most likely one is if the port is already in use.
      */
     if (bind(this->hostSocket, this->serverAddress.ai_addr, this->serverAddress.ai_addrlen) < 0)
-        throw std::runtime_error(std::string("ERROR binding socket to host: ") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR binding socket to host: ", strerror(errno));
     
     /* listen()
      The listen() function listens for connections on the socket, with two arguments.
@@ -98,7 +98,7 @@ void ServerSocket::setSocket(int portNum) {
      This function cannot fail, as long as the socket is valid, so there is no error code.
      */
     if (listen(this->hostSocket, MAX_NUMBER_OF_CONNECTIONS) < 0) {
-        throw std::runtime_error(std::string("ERROR listening for incoming connections") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR listening for incoming connections", strerror(errno));
     }
     
     //Initialize activeConnections[] as false
@@ -135,7 +135,7 @@ void ServerSocket::addClient() {
     
     //Checks for error with accepting
     if (this->clientSockets[nextIndex] < 0)
-        throw std::runtime_error(std::string("ERROR accepting client") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR accepting client", strerror(errno));
     
     this->activeConnections[nextIndex] = true;
 }
@@ -170,13 +170,7 @@ void ServerSocket::send(const char* message, unsigned int clientIndex, bool thro
     long messageSize = write(this->clientSockets[clientIndex], message, messageLength);
     
     if (messageSize < 0) {
-        throw std::runtime_error(std::string("ERROR sending message: ") + std::string(strerror(errno)));
-    } else if (messageSize < messageLength) {
-        if (throwErrorIfNotFullySent) { //Error sent only if optional parameter is manually set to true: if the message was too long to send all of it
-            throw std::runtime_error(std::string("ERROR message too long: only sent ") + std::to_string(messageSize) + std::string(" of ") + std::to_string(messageLength));
-        } else {
-            std::cout << "ERROR message too long: only sent " << messageSize << " of " << messageLength << std::endl;
-        }
+        throw strcat((char *)"ERROR sending message: ", strerror(errno));
     }
 }
 
@@ -216,7 +210,7 @@ std::string ServerSocket::receive(unsigned int clientIndex, bool* socketClosed) 
     
     //Checks for errors reading from the socket
     if (messageSize < 0)
-        throw std::runtime_error(std::string("ERROR reading from socket: ") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR reading from socket: ", strerror(errno));
     
     if (socketClosed != nullptr && messageSize == 0) {
         *socketClosed = true;
@@ -267,9 +261,17 @@ ServerSocket::~ServerSocket() {
         //Properly terminate the sockets
         for (int clientIndex = 0; clientIndex < MAX_NUMBER_OF_CONNECTIONS; clientIndex++) {
             if (this->activeConnections[clientIndex]) {
-                close(this->clientSockets[clientIndex]);
+                try {
+                    close(this->clientSockets[clientIndex]);
+                } catch (...) {
+                    printf("Error closing client socket (server side)");
+                }
             }
         }
-        close(this->hostSocket);
+        try {
+            close(this->hostSocket);
+        } catch (...) {
+            printf("Error closing host server socket (server side)");
+        }
     }
 }

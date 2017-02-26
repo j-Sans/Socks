@@ -9,9 +9,7 @@
 #ifndef ServerSocket_hpp
 #define ServerSocket_hpp
 
-#include <iostream>
 #include <string>
-#include <exception>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +19,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <cerrno>
 
 #define MAX_NUMBER_OF_CONNECTIONS 5
 #define BUFFER_SIZE 65535
