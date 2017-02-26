@@ -112,12 +112,12 @@ void ServerSocket::setSocket(int portNum) {
 
 void ServerSocket::addClient() {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     int nextIndex = this->getNextAvailableIndex();
     
     if (nextIndex == -1) {
-        throw std::range_error("Cannot connect more than " + std::to_string(MAX_NUMBER_OF_CONNECTIONS) + " sockets");
+        throw strcat("Max number of sockets: ", std::to_string(MAX_NUMBER_OF_CONNECTIONS).c_str());
     }
     
     /* accept()
@@ -142,10 +142,10 @@ void ServerSocket::addClient() {
 
 void ServerSocket::closeConnection(unsigned int clientIndex) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
-        throw std::range_error("Socket index uninitialized");
+        throw "Socket index uninitialized";
     
     close(this->clientSockets[clientIndex]);
     
@@ -155,42 +155,58 @@ void ServerSocket::closeConnection(unsigned int clientIndex) {
     this->activeConnections[clientIndex] = false;
 }
 
-void ServerSocket::send(const char* message, unsigned int clientIndex, bool throwErrorIfNotFullySent) {
+std::string ServerSocket::send(const char* message, unsigned int clientIndex, bool ensureFullStringSent) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     if (std::string(message) == "")
-        throw std::logic_error("No message to send");
+        throw "No message to send";
     
     if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
-        throw std::range_error("Socket index uninitialized");
+        throw "Socket index uninitialized";
     
     unsigned long messageLength = strlen(message);
     
-    long messageSize = write(this->clientSockets[clientIndex], message, messageLength);
+    long sentSize = write(this->clientSockets[clientIndex], message, messageLength);
     
-    if (messageSize < 0) {
+    if (sentSize < 0) {
         throw strcat((char *)"ERROR sending message: ", strerror(errno));
+    } else if (sentSize < messageLength) {
+        std::string extraStr; //Holds the rest of the string that was not sent
+        for (unsigned long a = sentSize; a < messageLength; a++) {
+            extraStr += message[a];
+        }
+        if (ensureFullStringSent) {
+            this->send(extraStr.c_str(), clientIndex, ensureFullStringSent); //Recursively keep sending the rest of the string until it is all sent
+            return "";
+        }
+        return extraStr; //Return any part of the string that was not sent. This occurs if the string is too long
     }
+    return "";
 }
 
-void ServerSocket::broadcast(const char* message, bool throwErrorIfNotFullySent) {
+void ServerSocket::broadcast(const char* message, bool ensureFullStringSent) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
         if (this->activeConnections[a]) {
-            this->send(message, a, throwErrorIfNotFullySent);
+            // If ensureFullStringSent, keep sending until the entire string has been sent
+            // Otherwise only send as much sends the first time
+            std::string unsent(message);
+            do {
+                unsent = this->send(unsent.c_str(), a);
+            } while (ensureFullStringSent ? unsent.size() > 0 : false);
         }
     }
 }
 
 std::string ServerSocket::receive(unsigned int clientIndex, bool* socketClosed) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
-        throw std::range_error("Socket index uninitialized");
+        throw "Socket index uninitialized";
     
     //Initialize the buffer where received info is stored
     bzero(this->buffer, BUFFER_SIZE);
@@ -222,11 +238,12 @@ std::string ServerSocket::receive(unsigned int clientIndex, bool* socketClosed) 
 bool ServerSocket::allReceived(const char* messageToCompare) {
     for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
         bool connectionClosed = false;
-        if (this->activeConnections[a] && this->receive(a, &connectionClosed) != messageToCompare)
+        if (this->activeConnections[a] && this->receive(a, &connectionClosed) != messageToCompare) {
             if (connectionClosed) {
                 this->closeConnection(a);
                 return false;
             }
+        }
     }
     return true;
 }

@@ -63,21 +63,23 @@ public:
     void closeConnection(unsigned int clientIndex);
     
     /*!
-     * A function that sends a message to a single client. An error will be thrown if the socket is not set, if the given index is out of range, or if an error occurs in sending the message. If the optional parameter is set to true, an error will also be thrown if only part of the message was thrown.
+     * A function that sends a message to a single client. An error will be thrown if the socket is not set, if the given index is out of range, or if an error occurs in sending the message.
      *
      * @param message The message to be sent, as a const char*.
      * @param clientIndex An unsigned int indicating the index of the client to whom to send the message.
-     * @param throwErrorIfNotFullySent An optional boolean indicating if an error should be thrown if only part of the message was sent. Automatically set to false.
+     * @param ensureFullStringSent An optional parameter that will make sure the full string is sent if it is too long to send with one call of write(). It is automatically set to false (so the rest of the string is not sent, but rather returned.
+     *
+     * @return Any part of the string that wasn't sent if the given string was too large to send in full. Only part of the string would have been sent, the rest is returned.
      */
-    void send(const char* message, unsigned int clientIndex, bool throwErrorIfNotFullySent = false);
+    std::string send(const char* message, unsigned int clientIndex, bool ensureFullStringSent = false);
     
     /*!
      * A function that sends a message to all clients. An error will be thrown if the socket is not set or if an error occurs in sending the message to any of the clients. If the optional parameter is set to true, an error will also be thrown if only part of the message was thrown.
      *
      * @param message The message to be sent, as a const char*.
-     * @param throwErrorIfNotFullySent An optional boolean indicating if an error should be thrown if only part of the message was sent. Automatically set to false.
+     * @param ensureFullStringSent An optional parameter that will make sure the full string is sent if it is too long to send with one call of write(). It is automatically set to false (so the rest of the string is not sent, but rather discarded.
      */
-    void broadcast(const char* message, bool throwErrorIfNotFullySent = false);
+    void broadcast(const char* message, bool ensureFullStringSent = false);
     
     /*!
      * A function that receives a message from a single client. The function will wait for a short period for the client to send the message, and if the message is not received it will throw an error. An error is also thrown if the index is out of range or if the socket is not set.
