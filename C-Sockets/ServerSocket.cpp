@@ -232,7 +232,7 @@ std::string ServerSocket::receive(unsigned int clientIndex, bool* socketClosed) 
         *socketClosed = true;
     }
     
-    return std::string(buffer, messageSize);
+    return std::string(this->buffer, messageSize);
 }
 
 bool ServerSocket::allReceived(const char* messageToCompare) {

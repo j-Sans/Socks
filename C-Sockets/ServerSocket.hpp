@@ -63,7 +63,7 @@ public:
     void closeConnection(unsigned int clientIndex);
     
     /*!
-     * A function that sends a message to a single client. An error will be thrown if the socket is not set, if the given index is out of range, or if an error occurs in sending the message.
+     * A function that sends a message to a single client. An error will be thrown if the socket is not set, if the given index is out of range, if an error occurs in sending the message, or if the message is an empty string.
      *
      * @param message The message to be sent, as a const char*.
      * @param clientIndex An unsigned int indicating the index of the client to whom to send the message.

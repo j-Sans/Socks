@@ -29,7 +29,7 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
     
     //Check for an error with getaddrinfo()
     if (returnVal != 0) {
-        throw std::runtime_error(std::string("ERROR getting host address: ") + std::string(gai_strerror(returnVal))); //gai_strerror() returns a c string representation of the error
+        throw strcat((char *)"ERROR getting host address: ", gai_strerror(returnVal)); //gai_strerror() returns a c string representation of the error
     }
     
     //Set the first host in the list to the desired host
@@ -55,7 +55,7 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
     
     //Checks for errors initializing socket
     if (socket < 0)
-        throw std::runtime_error(std::string("ERROR opening socket: ") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR opening socket: ", strerror(errno));
     
     //No need to call bind() (see server side) because the local port number doesn't matter; the kernel will find an open port.
     
@@ -71,43 +71,46 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
      The function returns 0 if successful and -1 if it fails.
      */
     if (connect(this->connectionSocket, serverAddress.ai_addr, serverAddress.ai_addrlen) < 0)
-        throw std::runtime_error(std::string("ERROR connecting: ") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR connecting: ", strerror(errno));
     
     freeaddrinfo(serverAddressList); //Free the linked list now that we have the local host information
     
     this->setUp = true;
 }
 
-void ClientSocket::send(const char* message, bool throwErrorIfNotFullySent) {
+std::string ClientSocket::send(const char* message, bool ensureFullStringSent) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
+        throw "Socket not set";
     
     if (std::string(message) == "")
-        throw std::logic_error("No message to send");
+        throw "No message to send";
     
     unsigned long messageLength = strlen(message);
     
-    long messageSize = write(this->connectionSocket, message, messageLength);
+    long sentSize = write(this->connectionSocket, message, messageLength);
     
-    if (messageSize < 0) {
-        throw std::runtime_error(std::string("ERROR sending message: ") + std::string(strerror(errno)));
-    } else if (messageSize < messageLength) {
-        if (throwErrorIfNotFullySent) { //Error sent only if optional parameter is manually set to true: if the message was too long to send all of it
-            throw std::runtime_error(std::string("ERROR message too long: only sent ") + std::to_string(messageSize) + std::string(" of ") + std::to_string(messageLength));
-        } else {
-            std::cout << "ERROR message too long: only sent " << messageSize << " of " << messageLength << std::endl;
+    if (sentSize < 0) {
+        throw strcat((char *)"ERROR sending message: ", strerror(errno));
+    } else if (sentSize < messageLength) {
+        std::string extraStr; //Holds the rest of the string that was not sent
+        for (unsigned long a = sentSize; a < messageLength; a++) {
+            extraStr += message[a];
         }
+        if (ensureFullStringSent) {
+            this->send(extraStr.c_str(), ensureFullStringSent); //Recursively keep sending the rest of the string until it is all sent
+            return "";
+        }
+        return extraStr; //Return any part of the string that was not sent. This occurs if the string is too long
     }
+    return "";
 }
 
 std::string ClientSocket::receive(bool* socketClosed) {
     if (!this->setUp)
-        throw std::logic_error("Socket not set");
-    
-    char buffer[BUFFER_SIZE]; //This program will read characters from the connection into this buffer
+        throw "Socket not set";
     
     //Initialize the buffer where received info is stored
-    bzero(buffer, BUFFER_SIZE);
+    bzero(this->buffer, BUFFER_SIZE);
     
     long messageSize; //Stores the return value from the calls to read() and write() by holding the number of characters either read or written
     
@@ -120,17 +123,17 @@ std::string ClientSocket::receive(bool* socketClosed) {
      
      The third argument is the maximum number of characters to to be read into the buffer.
      */
-    messageSize = read(this->connectionSocket, buffer, BUFFER_SIZE);
+    messageSize = read(this->connectionSocket, this->buffer, BUFFER_SIZE);
     
     //Checks for errors reading from the socket
     if (messageSize < 0)
-        throw std::runtime_error(std::string("ERROR reading from socket: ") + std::string(strerror(errno)));
+        throw strcat((char *)"ERROR reading from socket: ", strerror(errno));
     
     if (socketClosed != nullptr && messageSize == 0) {
         *socketClosed = true;
     }
     
-    return std::string(buffer, messageSize);
+    return std::string(this->buffer, messageSize);
 }
 
 bool ClientSocket::getSet() {

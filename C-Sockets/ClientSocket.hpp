@@ -35,12 +35,14 @@ public:
     void setSocket(const char* hostName, int portNum);
     
     /*!
-     * A function that sends a message to the host. An error will be thrown if the socket is not set or if an error occurs in sending the message.
+     * A function that sends a message to the host. An error will be thrown if the socket is not set, if an error occurs in sending the message, or if the message is an empty string.
      *
-     * @param message A std::string of the message to be sent.
-     * @param throwErrorIfNotFullySent An optional boolean indicating if an error should be thrown if only part of the message was sent. Automatically set to false.
+     * @param message The message to be sent, as a const char*.
+     * @param ensureFullStringSent An optional parameter that will make sure the full string is sent if it is too long to send with one call of write(). It is automatically set to false (so the rest of the string is not sent, but rather returned.
+     *
+     * @return Any part of the string that wasn't sent if the given string was too large to send in full. Only part of the string would have been sent, the rest is returned.
      */
-    void send(const char* message, bool throwErrorIfNotFullySent = false);
+    std::string send(const char* message, bool ensureFullStringSent = false);
     
     /*!
      * A function that receives a message from the host. The function will wait for a short period for the client to send the message, and if the message is not received it will throw an error. An error is also thrown if the socket is not set.
@@ -61,6 +63,8 @@ private:
     
     int connectionSocket; //This is the "file descriptor", which stores values from both the socket system call and the accept system call
     int portNumber; //The port nubmer where connections are accepted
+    
+    char buffer[BUFFER_SIZE];
     
     bool setUp = false; //Represents if the socket has already been set. If not, reading and writing will cause errors
 };
