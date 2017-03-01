@@ -54,14 +54,6 @@ public:
     std::string receive(bool* socketClosed = nullptr);
     
     /*!
-     * A function to set a timeout for reading from the socket, until otherwise specified. If a socket times out and receive()'s optional bool pointer has been into it, then it will indicate the socket closed. To reset to no timeout, set seconds to 0.
-     *
-     * @param seconds The number of seconds for which to set the timeout for. If 0, timeout will be cleared.
-     * @param milliseconds An optional parameter indicating the number of milliseconds to add to the timeout. Autoinitialized as 0.
-     */
-    void setTimeout(unsigned int seconds, unsigned int milliseconds = 0);
-    
-    /*!
      * @return If this object is set.
      */
     bool getSet();
