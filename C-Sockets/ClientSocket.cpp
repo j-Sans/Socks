@@ -144,7 +144,7 @@ void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
     struct timeval time;
     time.tv_sec = seconds;
     time.tv_usec = (milliseconds * 1000);
-    setsockopt(this->connectionSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&time, sizeof(time));
+    setsockopt(this->hostSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&time, sizeof(time));
 #endif
 }
 
