@@ -136,6 +136,18 @@ std::string ClientSocket::receive(bool* socketClosed) {
     return std::string(this->buffer, messageSize);
 }
 
+void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
+#if defined(_WIN32)
+    DWORD timeout = (seconds * 1000) + milliseconds;
+    setsockopt(this->hostSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+#else
+    struct timeval time;
+    time.tv_sec = seconds;
+    time.tv_usec = (milliseconds * 1000);
+    setsockopt(this->hostSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&time, sizeof(time));
+#endif
+}
+
 bool ClientSocket::getSet() {
     return this->setUp;
 }
