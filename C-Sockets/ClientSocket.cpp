@@ -2,6 +2,10 @@
 
 ClientSocket::ClientSocket() {}
 
+ClientSocket::ClientSocket(const char* hostName, int portNum) {
+    this->setSocket(hostName, portNum);
+}
+
 void ClientSocket::setSocket(const char* hostName, int portNum) {
     this->portNumber = portNum;
     
@@ -91,7 +95,7 @@ std::string ClientSocket::send(const char* message, bool ensureFullStringSent) {
     long sentSize = write(this->connectionSocket, message, messageLength);
     
     if (sentSize < 0) {
-        throw strcat((char *)"ERROR sending message: ", strerror(errno));
+        throw std::runtime_error(strcat((char *)"ERROR sending message: ", strerror(errno)));
     } else if (sentSize < messageLength) { //If only some of the string was sent, return what wasn't sent (or send the rest)
         std::string extraStr; //Holds the rest of the string that was not sent
         for (unsigned long a = sentSize; a < messageLength; a++) {
@@ -108,7 +112,7 @@ std::string ClientSocket::send(const char* message, bool ensureFullStringSent) {
 
 std::string ClientSocket::receive(bool* socketClosed) {
     if (!this->setUp)
-        throw "Socket not set";
+        throw std::logic_error("Socket not set");
     
     //Initialize the buffer where received info is stored
     bzero(this->buffer, BUFFER_SIZE);
@@ -128,7 +132,7 @@ std::string ClientSocket::receive(bool* socketClosed) {
     
     //Checks for errors reading from the socket
     if (messageSize < 0)
-        throw strcat((char *)"ERROR reading from socket: ", strerror(errno));
+        throw std::runtime_error(strcat((char *)"ERROR reading from socket: ", strerror(errno)));
     
     if (socketClosed != nullptr && messageSize == 0) {
         *socketClosed = true;
@@ -138,6 +142,9 @@ std::string ClientSocket::receive(bool* socketClosed) {
 }
 
 void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
+    if (!this->setUp)
+        throw std::logic_error("Socket not set");
+    
 #if defined(_WIN32)
     DWORD timeout = (seconds * 1000) + milliseconds;
     setsockopt(this->hostSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));

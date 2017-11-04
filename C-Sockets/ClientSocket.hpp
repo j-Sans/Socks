@@ -21,6 +21,8 @@ public:
     //Constructor
     ClientSocket();
     
+    ClientSocket(const char* hostName, int portNum);
+    
     //Destructor
     ~ClientSocket();
     
