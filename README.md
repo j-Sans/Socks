@@ -1,4 +1,4 @@
-# C-Sockets
+# Socks
 ### A convinient TCP C-Socket wrapper class.
 
 Contains ServerSocket and ClientSocket classes which build directly around the C standard library in a simple and easy to use bundle.

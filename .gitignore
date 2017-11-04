@@ -8,3 +8,5 @@
 *.pbxproj
 
 *.xcscheme
+
+*.xcbkptlist

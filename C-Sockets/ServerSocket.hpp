@@ -10,6 +10,7 @@
 #define ServerSocket_hpp
 
 #include <string>
+#include <exception>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,7 @@ class ServerSocket {
 public:
     //Constructor
     ServerSocket();
+    ServerSocket(int portNum);
     
     //Destructor
     ~ServerSocket();
@@ -92,13 +94,13 @@ public:
     std::string receive(unsigned int clientIndex, bool* socketClosed = nullptr);
     
     /*!
-     * A function that checks if all clients sent a specific message. This function calls ServerSocket::receive() so if another message has been sent that message may be received instead. This function throws no errors other than those called by ServerSocket::receive() or ServerSocket::closeConnection(). Any sockets where connection was lost are automatically closed. 
+     * A function that checks if all clients sent a specific message. This function calls ServerSocket::receive() so if another message has been sent that message may be received instead, and thus will not be read or returned by the server. This function throws no errors other than those called by ServerSocket::receive() or ServerSocket::closeConnection(). Any sockets where connection was lost are automatically closed.
      *
      * @param messageToCompare The message that is checked with all clients, as a const char*.
      *
      * @return True if all clients sent the same message as the one passed in. False otherwise.
      */
-    bool allReceived(const char* messageToCompare);
+    bool receivedFromAll(const char* messageToCompare);
     
     /*!
      * A function to set a timeout for reading from the socket, until otherwise specified. If a socket times out and receive()'s optional bool pointer has been into it, then it will indicate the socket closed. To reset to no timeout, set seconds to 0. Only set for the connections with other clients.
@@ -119,12 +121,12 @@ public:
     /*!
      * @return The number of clients of this socket.
      */
-    unsigned int numberOfClients();
+    unsigned int numberOfClients() const;
     
     /*!
      * @return If this object is set.
      */
-    bool getSet();
+    bool isSet() const;
     
 private:
     //Private properties
@@ -146,11 +148,11 @@ private:
     addrinfo serverAddress;
     
     //These are "file descriptors", which store values from both the socket system call and the accept system call
-    int hostSocket;
+    int hostSocketFD;
     
     bool activeConnections[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
     
-    int clientSockets[MAX_NUMBER_OF_CONNECTIONS];
+    int clientSocketsFD[MAX_NUMBER_OF_CONNECTIONS];
     
     /* struct sockaddr_storage {
         sa_family_t ss_family; //Either AF_INET or AF_INET6
@@ -172,7 +174,7 @@ private:
      *
      * @return The next available index.
      */
-    int getNextAvailableIndex();
+    int getNextAvailableIndex() const;
     
 };
 

@@ -64,7 +64,7 @@ public:
     /*!
      * @return If this object is set.
      */
-    bool getSet();
+    bool getSet() const;
     
 private:
     //Private properties

@@ -29,7 +29,7 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
     
     //Check for an error with getaddrinfo()
     if (returnVal != 0) {
-        throw strcat((char *)"ERROR getting host address: ", gai_strerror(returnVal)); //gai_strerror() returns a c string representation of the error
+        throw std::runtime_error(strcat((char *)"ERROR getting host address: ", gai_strerror(returnVal))); //gai_strerror() returns a c string representation of the error
     }
     
     //Set the first host in the list to the desired host
@@ -55,7 +55,7 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
     
     //Checks for errors initializing socket
     if (socket < 0)
-        throw strcat((char *)"ERROR opening socket: ", strerror(errno));
+        throw std::runtime_error(strcat((char *)"ERROR opening socket: ", strerror(errno)));
     
     //No need to call bind() (see server side) because the local port number doesn't matter; the kernel will find an open port.
     
@@ -71,19 +71,20 @@ void ClientSocket::setSocket(const char* hostName, int portNum) {
      The function returns 0 if successful and -1 if it fails.
      */
     if (connect(this->connectionSocket, serverAddress.ai_addr, serverAddress.ai_addrlen) < 0)
-        throw strcat((char *)"ERROR connecting: ", strerror(errno));
+        throw std::runtime_error(strcat((char *)"ERROR connecting: ", strerror(errno)));
     
     freeaddrinfo(serverAddressList); //Free the linked list now that we have the local host information
     
-    this->setUp = true;
+    this->setUp = true; //All functions ensure the socket has been set before doing anything
 }
 
 std::string ClientSocket::send(const char* message, bool ensureFullStringSent) {
     if (!this->setUp)
-        throw "Socket not set";
+        throw std::logic_error("Socket not set");
     
+    //Empty messages won't be sent
     if (std::string(message) == "")
-        throw "No message to send";
+        throw std::logic_error("No message to send");
     
     unsigned long messageLength = strlen(message);
     
@@ -91,12 +92,12 @@ std::string ClientSocket::send(const char* message, bool ensureFullStringSent) {
     
     if (sentSize < 0) {
         throw strcat((char *)"ERROR sending message: ", strerror(errno));
-    } else if (sentSize < messageLength) {
+    } else if (sentSize < messageLength) { //If only some of the string was sent, return what wasn't sent (or send the rest)
         std::string extraStr; //Holds the rest of the string that was not sent
         for (unsigned long a = sentSize; a < messageLength; a++) {
             extraStr += message[a];
         }
-        if (ensureFullStringSent) {
+        if (ensureFullStringSent) { //This optional bool is set to false. If manually changed to true send the rest. Otherwise, return the unsent part
             this->send(extraStr.c_str(), ensureFullStringSent); //Recursively keep sending the rest of the string until it is all sent
             return "";
         }
@@ -141,14 +142,24 @@ void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
     DWORD timeout = (seconds * 1000) + milliseconds;
     setsockopt(this->hostSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 #else
-    struct timeval time;
+    struct timeval time; //Time holds the maximum time to wait
     time.tv_sec = seconds;
     time.tv_usec = (milliseconds * 1000);
+    
+    /* setsockopt()
+     The setsockopt() function changes options for a given socket, depending on the parameters.
+     
+     The first argument is the client side socket, passed by its file descriptor.
+     
+     The second argument is ...?
+     
+     The third argument tells what setting to change. SO_RCVTIMEO indicates the socket option is for the amount of time to wait while timing out.
+     */
     setsockopt(this->connectionSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&time, sizeof(time));
 #endif
 }
 
-bool ClientSocket::getSet() {
+bool ClientSocket::getSet() const {
     return this->setUp;
 }
 
