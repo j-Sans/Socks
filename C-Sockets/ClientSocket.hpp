@@ -20,7 +20,6 @@ class ClientSocket {
 public:
     //Constructor
     ClientSocket();
-    
     ClientSocket(const char* hostName, int portNum);
     
     //Destructor
@@ -29,7 +28,7 @@ public:
     //Public member functions
     
     /*!
-     * A function to initialize the socket. This must be done before the socket can be used. Will throw an error if the socket cannot be opened or if the port is occupied.
+     * A function to initialize the socket. This must be done before the socket can be used. Will throw an error if the socket cannot be opened or if the port is occupied, or if the socket is already set.
      *
      * @param hostName A const char* indicating the name of the host to whom to connect. "localhost" specifies that the host is on the same machine. Otherwise, use the name of the client.
      * @param portNum The number of the port on the host at which clients should connect.
@@ -54,6 +53,11 @@ public:
      * @return The received message from the host.
      */
     std::string receive(bool* socketClosed = nullptr);
+    
+    /*!
+     * A function to close the socket, so it can be rebound. Until it is set, other functions cannot be called.
+     */
+    void close();
     
     /*!
      * A function to set a timeout for reading from the socket, until otherwise specified. If a socket times out and receive()'s optional bool pointer has been into it, then it will indicate the socket closed. To reset to no timeout, set seconds to 0.

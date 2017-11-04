@@ -19,6 +19,9 @@ std::string ServerSocket::getHostName() {
 //Public member functions
 
 void ServerSocket::setSocket(int portNum) {
+    if (this->setUp)
+        throw std::logic_error("Socket already set");
+    
     int returnVal;
     
     addrinfo hints; //A struct containing information on the address. Will be passed to getaddrinfo() to give hints about the connection to be made
@@ -334,6 +337,26 @@ int ServerSocket::getNextAvailableIndex() const {
 
 ServerSocket::~ServerSocket() {
     if (this->setUp) {
+        
+        
+        
+        bool* activeConnections;//[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
+        
+        int* clientSocketsFD;//[MAX_NUMBER_OF_CONNECTIONS];
+        
+        /* struct sockaddr_storage {
+         sa_family_t ss_family; //Either AF_INET or AF_INET6
+         * A bunch of padding variables are also here. Ignore them. *
+         }
+         This struct is large enough that it can hold either an IPv4 or an IPv6 address (and be cast to either sockaddr_in or sockaddr_in6 if necessary)
+         */
+        sockaddr_storage* clientAddresses;//[MAX_NUMBER_OF_CONNECTIONS];
+        socklen_t* clientAddressSizes;
+        
+        
+        
+        
+        
         //Properly terminate the sockets on both client and host side
         for (int clientIndex = 0; clientIndex < MAX_NUMBER_OF_CONNECTIONS; clientIndex++) {
             if (this->activeConnections[clientIndex]) {

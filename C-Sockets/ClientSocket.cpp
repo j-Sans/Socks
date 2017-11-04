@@ -7,6 +7,9 @@ ClientSocket::ClientSocket(const char* hostName, int portNum) {
 }
 
 void ClientSocket::setSocket(const char* hostName, int portNum) {
+    if (this->setUp)
+        throw std::logic_error("Socket already set");
+    
     this->portNumber = portNum;
     
     int returnVal;
@@ -139,6 +142,16 @@ std::string ClientSocket::receive(bool* socketClosed) {
     }
     
     return std::string(this->buffer, messageSize);
+}
+
+void ClientSocket::close() {
+    if (!this->setUp)
+        throw std::logic_error("Socket not set");
+    
+    close(this->connectionSocket);
+    portNumber = 0;
+    delete buffer;
+    set = false;
 }
 
 void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {

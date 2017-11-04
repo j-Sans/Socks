@@ -46,7 +46,7 @@ public:
     //Public member functions
     
     /*!
-     * A function to initialize the socket. This must be done before the socket can be used. Will throw an error if the socket cannot be opened or if the port is occupied.
+     * A function to initialize the socket. This must be done before the socket can be used. Will throw an error if the socket cannot be opened or if the port is occupied, or if the socket is already set.
      *
      * @param portNum The number of the port on the host at which clients should connect.
      */
@@ -150,9 +150,9 @@ private:
     //These are "file descriptors", which store values from both the socket system call and the accept system call
     int hostSocketFD;
     
-    bool activeConnections[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
+    bool* activeConnections;//[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
     
-    int clientSocketsFD[MAX_NUMBER_OF_CONNECTIONS];
+    int* clientSocketsFD;//[MAX_NUMBER_OF_CONNECTIONS];
     
     /* struct sockaddr_storage {
         sa_family_t ss_family; //Either AF_INET or AF_INET6
@@ -160,8 +160,8 @@ private:
      }
      This struct is large enough that it can hold either an IPv4 or an IPv6 address (and be cast to either sockaddr_in or sockaddr_in6 if necessary)
      */
-    sockaddr_storage clientAddresses[MAX_NUMBER_OF_CONNECTIONS];
-    socklen_t clientAddressSizes[MAX_NUMBER_OF_CONNECTIONS];
+    sockaddr_storage* clientAddresses;//[MAX_NUMBER_OF_CONNECTIONS];
+    socklen_t* clientAddressSizes;//[MAX_NUMBER_OF_CONNECTIONS];
     
     char buffer[BUFFER_SIZE];
     
