@@ -2,8 +2,8 @@
 
 ServerSocket::ServerSocket() {}
 
-ServerSocket::ServerSocket(int portNum) {
-    this->setSocket(portNum);
+ServerSocket::ServerSocket(int portNum, int maxConnections) {
+    this->setSocket(portNum, maxConnections);
 }
 
 //Static functions
@@ -18,11 +18,18 @@ std::string ServerSocket::getHostName() {
 
 //Public member functions
 
-void ServerSocket::setSocket(int portNum) {
+void ServerSocket::setSocket(int portNum, int maxConnections) {
     if (this->setUp)
         throw std::logic_error("Socket already set");
     
     int returnVal;
+    
+    for (int a = 0; a < maxConnections; a++) {
+        this->activeConnections.push_back(false); //All connections initially inactive
+        this->clientSocketsFD.push_back(0); //No socket file descriptors set
+        this->clientAddresses.push_back(sockaddr_storage()); //All addresses set as empty structs
+        this->clientAddressSizes.push_back(socklen_t()); //All address sizes set as empty sizes
+    }
     
     addrinfo hints; //A struct containing information on the address. Will be passed to getaddrinfo() to give hints about the connection to be made
     addrinfo* serverAddressList; //A pointer to an addrinfo struct that will be filled with the server address by getaddrinfo()
@@ -103,13 +110,8 @@ void ServerSocket::setSocket(int portNum) {
      
      This function cannot fail, as long as the socket is valid.
      */
-    if (listen(this->hostSocketFD, MAX_NUMBER_OF_CONNECTIONS) < 0) {
+    if (listen(this->hostSocketFD, 1) < 0) {
         throw std::runtime_error(strcat((char *)"ERROR listening for incoming connections", strerror(errno)));
-    }
-    
-    //Initialize activeConnections[] as false
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
-        this->activeConnections[a] = false;
     }
     
     freeaddrinfo(serverAddressList); //Free the linked list now that we have the local host information
@@ -124,7 +126,7 @@ void ServerSocket::addClient() {
     int nextIndex = this->getNextAvailableIndex(); //Find the next available index at which to set the new connection
     
     if (nextIndex == -1) {
-        throw std::logic_error(strcat((char *)"Max number of sockets: ", std::to_string(MAX_NUMBER_OF_CONNECTIONS).c_str()));
+        throw std::logic_error(strcat((char *)"Max number of sockets: ", std::to_string(this->activeConnections.size()).c_str()));
     }
     
     /* accept()
@@ -152,7 +154,7 @@ void ServerSocket::closeConnection(unsigned int clientIndex) {
         throw std::logic_error("Socket not set");
     
     //Throw an error if there is no socket at the index to close
-    if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
+    if (clientIndex >= this->activeConnections.size() || !this->activeConnections[clientIndex])
         throw std::logic_error("Socket index uninitialized");
     
     //Close the socket of the given index
@@ -173,7 +175,7 @@ std::string ServerSocket::send(const char* message, unsigned int clientIndex, bo
         throw std::logic_error("No message to send");
     
     //Throw an error if there is no socket at the index
-    if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
+    if (clientIndex >= this->activeConnections.size() || !this->activeConnections[clientIndex])
         throw std::logic_error("Socket index uninitialized");
     
     unsigned long messageLength = strlen(message);
@@ -201,7 +203,7 @@ void ServerSocket::broadcast(const char* message, bool ensureFullStringSent) {
         throw std::logic_error("Socket not set");
     
     //Send the message to each active client
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
+    for (int a = 0; a < this->activeConnections.size(); a++) {
         if (this->activeConnections[a]) {
             this->send(message, a, ensureFullStringSent);
         }
@@ -213,7 +215,7 @@ std::string ServerSocket::receive(unsigned int clientIndex, bool* socketClosed) 
         throw std::logic_error("Socket not set");
     
     //Throw an error if there is no socket at the index from which to receive
-    if (clientIndex >= MAX_NUMBER_OF_CONNECTIONS || !this->activeConnections[clientIndex])
+    if (clientIndex >= this->activeConnections.size() || !this->activeConnections[clientIndex])
         throw std::logic_error("Socket index uninitialized");
     
     //Initialize the buffer where received info is stored
@@ -250,7 +252,7 @@ bool ServerSocket::receivedFromAll(const char* messageToCompare) {
         throw std::logic_error("Socket not set");
     
     //If each client sent the same message, return true
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
+    for (int a = 0; a < this->activeConnections.size(); a++) {
         bool connectionClosed = false;
         if (this->activeConnections[a] && this->receive(a, &connectionClosed) != messageToCompare) { //Also closes sockets that closed on client side
             return false;
@@ -265,7 +267,7 @@ void ServerSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
     
 #if defined(_WIN32)
     DWORD timeout = (seconds * 1000) + milliseconds;
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
+    for (int a = 0; a < this->activeConnections.size(); a++) {
         if (this->activeConnections[a]) setsockopt(this->clientSocketsFD[a], SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
     }
 #else
@@ -273,7 +275,7 @@ void ServerSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
     time.tv_sec = seconds;
     time.tv_usec = (milliseconds * 1000);
     
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) { //For each socket, set the maximum waiting time the inputted amount
+    for (int a = 0; a < this->activeConnections.size(); a++) { //For each socket, set the maximum waiting time the inputted amount
         /* setsockopt()
          The setsockopt() function changes options for a given socket, depending on the parameters.
          
@@ -309,7 +311,7 @@ unsigned int ServerSocket::numberOfClients() const {
     
     //Count the number of connections which are active
     int connections = 0;
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
+    for (int a = 0; a < this->activeConnections.size(); a++) {
         if (this->activeConnections[a]) {
             connections++;
         }
@@ -327,7 +329,7 @@ int ServerSocket::getNextAvailableIndex() const {
     if (!this->setUp)
         throw std::logic_error("Socket not set");
     
-    for (int a = 0; a < MAX_NUMBER_OF_CONNECTIONS; a++) {
+    for (int a = 0; a < this->activeConnections.size(); a++) {
         if (!this->activeConnections[a]) return a;
     }
     return -1;
@@ -337,28 +339,8 @@ int ServerSocket::getNextAvailableIndex() const {
 
 ServerSocket::~ServerSocket() {
     if (this->setUp) {
-        
-        
-        
-        bool* activeConnections;//[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
-        
-        int* clientSocketsFD;//[MAX_NUMBER_OF_CONNECTIONS];
-        
-        /* struct sockaddr_storage {
-         sa_family_t ss_family; //Either AF_INET or AF_INET6
-         * A bunch of padding variables are also here. Ignore them. *
-         }
-         This struct is large enough that it can hold either an IPv4 or an IPv6 address (and be cast to either sockaddr_in or sockaddr_in6 if necessary)
-         */
-        sockaddr_storage* clientAddresses;//[MAX_NUMBER_OF_CONNECTIONS];
-        socklen_t* clientAddressSizes;
-        
-        
-        
-        
-        
         //Properly terminate the sockets on both client and host side
-        for (int clientIndex = 0; clientIndex < MAX_NUMBER_OF_CONNECTIONS; clientIndex++) {
+        for (int clientIndex = 0; clientIndex < this->activeConnections.size(); clientIndex++) {
             if (this->activeConnections[clientIndex]) {
                 try {
                     close(this->clientSocketsFD[clientIndex]);

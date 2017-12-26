@@ -10,6 +10,7 @@
 #define ServerSocket_hpp
 
 #include <string>
+#include <vector>
 #include <exception>
 
 #include <stdio.h>
@@ -22,14 +23,13 @@
 #include <netdb.h>
 #include <cerrno>
 
-#define MAX_NUMBER_OF_CONNECTIONS 5
 #define BUFFER_SIZE 65535
 
 class ServerSocket {
 public:
     //Constructor
     ServerSocket();
-    ServerSocket(int portNum);
+    ServerSocket(int portNum, int maxConnections);
     
     //Destructor
     ~ServerSocket();
@@ -49,8 +49,9 @@ public:
      * A function to initialize the socket. This must be done before the socket can be used. Will throw an error if the socket cannot be opened or if the port is occupied, or if the socket is already set.
      *
      * @param portNum The number of the port on the host at which clients should connect.
+     * @param maxConnections The max number of clients that this host can theoretically connect with.
      */
-    void setSocket(int portNum);
+    void setSocket(int portNum, int maxConnections);
     
     /*!
      * A function that adds a client. If there is no client, then the function waits for a connection to be initiated by the client. Will throw an error if the maximum number of sockets (see MAXIMUM_NUMBER_OF_SOCKETS) have already been set, or if an error occurs connecting to the client.
@@ -150,9 +151,9 @@ private:
     //These are "file descriptors", which store values from both the socket system call and the accept system call
     int hostSocketFD;
     
-    bool* activeConnections;//[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
+    std::vector<bool> activeConnections;//[MAX_NUMBER_OF_CONNECTIONS]; //Initialized as all false. True if the connection of that index is an active connection
     
-    int* clientSocketsFD;//[MAX_NUMBER_OF_CONNECTIONS];
+    std::vector<int> clientSocketsFD;//[MAX_NUMBER_OF_CONNECTIONS];
     
     /* struct sockaddr_storage {
         sa_family_t ss_family; //Either AF_INET or AF_INET6
@@ -160,8 +161,8 @@ private:
      }
      This struct is large enough that it can hold either an IPv4 or an IPv6 address (and be cast to either sockaddr_in or sockaddr_in6 if necessary)
      */
-    sockaddr_storage* clientAddresses;//[MAX_NUMBER_OF_CONNECTIONS];
-    socklen_t* clientAddressSizes;//[MAX_NUMBER_OF_CONNECTIONS];
+    std::vector<sockaddr_storage> clientAddresses;//[MAX_NUMBER_OF_CONNECTIONS];
+    std::vector<socklen_t> clientAddressSizes;//[MAX_NUMBER_OF_CONNECTIONS];
     
     char buffer[BUFFER_SIZE];
     
@@ -175,6 +176,12 @@ private:
      * @return The next available index.
      */
     int getNextAvailableIndex() const;
+    
+    /*!
+     * A function to
+     *
+     */
+    
     
 };
 

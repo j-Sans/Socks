@@ -148,10 +148,9 @@ void ClientSocket::close() {
     if (!this->setUp)
         throw std::logic_error("Socket not set");
     
-    close(this->connectionSocket);
+    ::close(this->connectionSocket);
     portNumber = 0;
-    delete buffer;
-    set = false;
+    this->setUp = false;
 }
 
 void ClientSocket::setTimeout(unsigned int seconds, unsigned int milliseconds) {
@@ -187,7 +186,7 @@ ClientSocket::~ClientSocket() {
     if (this->setUp) {
         //Properly terminate the sockets
         try {
-            close(this->connectionSocket);
+            ::close(this->connectionSocket);
         } catch (...) {
             printf("Error closing socket (client side)");
         }
