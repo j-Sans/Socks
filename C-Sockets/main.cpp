@@ -5,6 +5,10 @@
 #include "ServerSocket.hpp"
 #include "ClientSocket.hpp"
 
+//For testing header only library
+//#include "../HeaderOnly/ServerSocket.hpp"
+//#include "../HeaderOnly/ClientSocket.hpp"
+
 int main(int argc, const char * argv[]) {
     /*
      This is a test which can be used to demonstrate either socket.
