@@ -41,5 +41,5 @@ To get the name of the host, call the static function ```ServerSocket::getHostNa
 
 More detailed documentation is available at [ServerSocket.hpp](https://github.com/ja-San/Socks/blob/master/C-Sockets/ServerSocket.hpp).
 
-### Credits
+## Credits
 I have written all of the code present, but have consulted with [Ben Spector](https://github.com/sydriax) for the future  direction of this project.
