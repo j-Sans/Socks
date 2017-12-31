@@ -22,7 +22,7 @@ The socket can also be closed with ```close()``` so the port can be reused. The 
 
 A limit for the amount of time a socket listens for a message can also be set using ```setTimeout(unsigned int seconds, unsigned int milliseconds = 0)```.
 
-More detailed documentation is available at [ClientSocket.hpp](https://github.com/ja-San/Socks/blob/master/C-Sockets/ClientSocket.hpp).
+More detailed documentation is available at [ClientSocket.hpp](https://github.com/ja-San/Socks/blob/master/src/ClientSocket.hpp).
 
 ### ServerSocket
 The following is an example usage of a ServerSocket object.
@@ -39,7 +39,7 @@ A limit for the amount of time a socket listens for a message can also be set us
 
 To get the name of the host, call the static function ```ServerSocket::getHostName()```.
 
-More detailed documentation is available at [ServerSocket.hpp](https://github.com/ja-San/Socks/blob/master/C-Sockets/ServerSocket.hpp).
+More detailed documentation is available at [ServerSocket.hpp](https://github.com/ja-San/Socks/blob/master/src/ServerSocket.hpp).
 
 ## Credits
 I have written all of the code present, but have consulted with [Ben Spector](https://github.com/sydriax) for the future  direction of this project.
