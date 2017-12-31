@@ -141,7 +141,26 @@ std::string ClientSocket::receive(bool* socketClosed) {
         *socketClosed = true;
     }
     
-    return std::string(this->buffer, messageSize);
+    std::string str = std::string(buffer, messageSize);
+    
+    //Check if there is more data waiting to be read, and if so, read it
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(this->connectionSocket, &readfds);
+    int n = this->connectionSocket + 1;
+    
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 20000;
+    
+    int returnValue = select(n, &readfds, NULL, NULL, &timeout);
+    if (returnValue < 0) {
+        throw std::runtime_error(std::string("ERROR finding information about socket: ") + std::string(strerror(errno)));
+    } else if (returnValue > 0) {
+        str += this->receive();
+    }
+    
+    return str;
 }
 
 void ClientSocket::close() {
