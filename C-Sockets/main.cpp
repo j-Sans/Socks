@@ -26,14 +26,12 @@ int main(int argc, const char * argv[]) {
     }
     
     if (input == 'Y' || input == 'y') {
-        ServerSocket server;
-        server.setSocket(3000, 1);
+        ServerSocket server(3000, 1);
         server.addClient();
         server.send("Hello client!", 0);
         std::cout << "Server received " << server.receive(0);
     } else {
-        ClientSocket client;
-        client.setSocket("localhost", 3000);
+        ClientSocket client("localhost", 3000);
         client.send("Hello server!");
         std::cout << "Client received " << client.receive();
     }

@@ -60,7 +60,7 @@ public:
     void close();
     
     /*!
-     * A function to set a timeout for reading from the socket, until otherwise specified. If a socket times out and receive()'s optional bool pointer has been into it, then it will indicate the socket closed. To reset to no timeout, set seconds to 0.
+     * A function to set a timeout for reading from the socket, until otherwise specified. If a socket times out and receive()'s optional bool pointer has been set, then it will indicate the socket closed. To reset to no timeout, set seconds to 0. A socket with a timeout will wait the given amount of time to receive a message, and stop listening after the alloted time has passed.
      *
      * @param seconds The number of seconds for which to set the timeout for. If 0, timeout will be cleared.
      * @param milliseconds An optional parameter indicating the number of milliseconds to add to the timeout. Autoinitialized as 0.
